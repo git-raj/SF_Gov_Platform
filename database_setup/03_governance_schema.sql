@@ -1,0 +1,87 @@
+-- ====================================================================
+-- GOVERNANCE SCHEMA - POLICIES, CONTROLS, CONTRACTS, CLASSIFICATION, RETENTION
+-- ====================================================================
+
+USE SCHEMA GOV_PLATFORM.GOVERNANCE;
+
+-- Policy registry (e.g., Data Retention, Data Classification, PII Handling)
+CREATE OR REPLACE TABLE POLICY_REGISTRY (
+  POLICY_ID       STRING PRIMARY KEY COMMENT='Stable policy id.',
+  POLICY_NAME     STRING NOT NULL COMMENT='Human readable name of the policy.',
+  POLICY_TYPE     STRING COMMENT='RETENTION|CLASSIFICATION|ACCESS|LINEAGE|QUALITY|RECON|SECURITY.',
+  VERSION         STRING COMMENT='Version identifier (e.g., 1.0.0).',
+  EFFECTIVE_FROM  DATE COMMENT='Effective date.',
+  EFFECTIVE_TO    DATE COMMENT='Sunset date (nullable).',
+  OWNER_PARTY_ID  STRING COMMENT='Policy owner.',
+  TEXT            STRING COMMENT='Policy text or reference URI.',
+  CREATED_AT      TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP(),
+  UPDATED_AT      TIMESTAMP_TZ
+) COMMENT='Top-level policy definitions used across the platform.';
+
+-- Control registry linked to policies; also references recon/DQ rules by external ids
+CREATE OR REPLACE TABLE CONTROL_REGISTRY (
+  CONTROL_ID      STRING PRIMARY KEY COMMENT='Stable control id.',
+  CONTROL_NAME    STRING NOT NULL COMMENT='Name of the control.',
+  CONTROL_TYPE    STRING COMMENT='PREVENTIVE|DETECTIVE|CORRECTIVE.',
+  POLICY_ID       STRING COMMENT='Parent policy.',
+  SCOPE_TYPE      STRING COMMENT='DATASET|PROCESS|PIPELINE|RULE.',
+  SCOPE_ID        STRING COMMENT='Identifier of scope (e.g., DATASET_ID or RULE_ID).',
+  DESCRIPTION     STRING COMMENT='What the control tests or enforces.',
+  TOLERANCE_ABS   NUMBER(38,6) COMMENT='Absolute tolerance for control (if applicable).',
+  TOLERANCE_PCT   NUMBER(9,6) COMMENT='Percentage tolerance for control (if applicable).',
+  MATERIALITY_ABS NUMBER(38,6) COMMENT='Materiality threshold (finance).',
+  SEVERITY        STRING COMMENT='CRITICAL|HIGH|MEDIUM|LOW.',
+  OWNER_PARTY_ID  STRING COMMENT='Control owner.',
+  ENABLED_FLAG    BOOLEAN DEFAULT TRUE COMMENT='Whether the control is active.',
+  CREATED_AT      TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP(),
+  UPDATED_AT      TIMESTAMP_TZ
+) COMMENT='Catalog of enforceable controls tied to policies and scopes.';
+
+-- Declarative data contracts for producers/consumers
+CREATE OR REPLACE TABLE DATA_CONTRACT (
+  CONTRACT_ID     STRING PRIMARY KEY COMMENT='Stable contract id.',
+  DATASET_ID      STRING COMMENT='Dataset governed by the contract.',
+  VERSION         STRING NOT NULL COMMENT='Contract version.',
+  CONTRACT_JSON   VARIANT COMMENT='JSON contract document (schema, SLAs, delivery guarantees).',
+  PRODUCER_PARTY_ID STRING COMMENT='Producer party.',
+  CONSUMER_PARTY_ID STRING COMMENT='Consumer party (or group).',
+  EFFECTIVE_FROM  TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP() COMMENT='Start time of the version.',
+  EFFECTIVE_TO    TIMESTAMP_TZ COMMENT='End time of the version.',
+  STATUS          STRING COMMENT='DRAFT|ACTIVE|DEPRECATED.',
+  CREATED_AT      TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP(),
+  UPDATED_AT      TIMESTAMP_TZ
+) COMMENT='Producer-consumer contracts defining schema, SLAs, quality and delivery expectations.';
+
+-- Classification registry (central vocab, separate from dataset instances)
+CREATE OR REPLACE TABLE CLASSIFICATION (
+  CLASS_ID        STRING PRIMARY KEY COMMENT='Classification id.',
+  CLASS_NAME      STRING NOT NULL COMMENT='PII|PCI|PHI|Confidential|Public etc.',
+  DESCRIPTION     STRING COMMENT='Definition and handling guidance.',
+  CREATED_AT      TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP(),
+  UPDATED_AT      TIMESTAMP_TZ
+) COMMENT='Controlled vocabulary for classification labels.';
+
+-- Retention policies
+CREATE OR REPLACE TABLE RETENTION_POLICY (
+  POLICY_ID       STRING PRIMARY KEY COMMENT='Retention policy id.',
+  POLICY_NAME     STRING NOT NULL COMMENT='Name of the retention policy.',
+  DURATION_DAYS   NUMBER(10,0) COMMENT='Retention duration in days.',
+  DISPOSITION     STRING COMMENT='ARCHIVE|PURGE|ANONYMIZE.',
+  LEGAL_HOLD_FLAG BOOLEAN DEFAULT FALSE COMMENT='If true, retention is suspended during holds.',
+  CREATED_AT      TIMESTAMP_TZ DEFAULT CURRENT_TIMESTAMP(),
+  UPDATED_AT      TIMESTAMP_TZ
+) COMMENT='Data retention policies and dispositions.';
+
+-- Add foreign key constraints
+ALTER TABLE POLICY_REGISTRY ADD CONSTRAINT FK_POLICY_OWNER 
+  FOREIGN KEY (OWNER_PARTY_ID) REFERENCES GOV_PLATFORM.OWNERSHIP.DIM_PARTY(PARTY_ID);
+ALTER TABLE CONTROL_REGISTRY ADD CONSTRAINT FK_CONTROL_POLICY 
+  FOREIGN KEY (POLICY_ID) REFERENCES POLICY_REGISTRY(POLICY_ID);
+ALTER TABLE CONTROL_REGISTRY ADD CONSTRAINT FK_CONTROL_OWNER 
+  FOREIGN KEY (OWNER_PARTY_ID) REFERENCES GOV_PLATFORM.OWNERSHIP.DIM_PARTY(PARTY_ID);
+ALTER TABLE DATA_CONTRACT ADD CONSTRAINT FK_CONTRACT_DATASET 
+  FOREIGN KEY (DATASET_ID) REFERENCES GOV_PLATFORM.CATALOG.DIM_DATASET(DATASET_ID);
+ALTER TABLE DATA_CONTRACT ADD CONSTRAINT FK_CONTRACT_PRODUCER 
+  FOREIGN KEY (PRODUCER_PARTY_ID) REFERENCES GOV_PLATFORM.OWNERSHIP.DIM_PARTY(PARTY_ID);
+ALTER TABLE DATA_CONTRACT ADD CONSTRAINT FK_CONTRACT_CONSUMER 
+  FOREIGN KEY (CONSUMER_PARTY_ID) REFERENCES GOV_PLATFORM.OWNERSHIP.DIM_PARTY(PARTY_ID);

@@ -1,0 +1,90 @@
+name: 'sf_governance_integration'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'sf_governance'
+
+# These configurations specify where dbt should look for different types of files.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+models:
+  sf_governance_integration:
+    # Apply governance post-hook to all models
+    +post-hook: 
+      - "{{ sf_governance_post_hook() }}"
+    
+    # Default materialization
+    +materialized: table
+    
+    # Model-specific configurations
+    +meta:
+      classification: "INTERNAL"
+      contains_pii: false
+      quality_critical_columns: []
+      
+    # Schema handling
+    +on_schema_change: "fail"
+    
+    # Tagging strategy
+    +tags: ["governance_tracked"]
+
+# Configure seeds
+seeds:
+  sf_governance_integration:
+    +materialized: table
+    +post-hook: "{{ sf_governance_post_hook() }}"
+
+# Configure snapshots
+snapshots:
+  sf_governance_integration:
+    +post-hook: "{{ sf_governance_post_hook() }}"
+    +meta:
+      classification: "INTERNAL"
+      contains_pii: false
+
+# Test configurations to integrate with quality framework
+tests:
+  +severity: error
+  +meta:
+    governance_tracked: true
+
+# Variables for governance integration
+vars:
+  # Governance settings
+  governance_enabled: true
+  lineage_tracking: true
+  auto_classification: true
+  
+  # Default metadata
+  default_domain: "ANALYTICS"
+  default_system: "DBT_{{ target.name | upper if target else 'DEV' }}"
+  default_owner: "DATA_ENGINEERING"
+  
+  # Quality settings
+  enable_row_count_checks: true
+  enable_column_profiling: false  # Can be expensive
+  
+# On-run-start: Setup governance reference data
+on-run-start: 
+  - "{{ sf_governance_setup() }}"
+
+# On-run-end: Optional cleanup or summary operations
+on-run-end:
+  - "{{ log('SF Gov Platform integration completed for ' ~ results|length ~ ' models', info=True) }}"
+
+# Grant configurations for secure access
+grants:
+  select: ["GOVERNANCE_READER_ROLE"]
+  usage: ["GOVERNANCE_READER_ROLE"]
