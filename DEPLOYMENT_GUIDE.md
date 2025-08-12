@@ -16,21 +16,21 @@ This guide provides step-by-step instructions for deploying the Snowflake Govern
 Deploy the foundational database structures and security model:
 
 ```bash
-# Execute the main deployment script
-snowsql -f deployment/01_deployment_script.sql
+# Execute the unified database setup script
+snowsql -f database_setup/unified_setup.sql
 
 # Expected output:
 # - GOV_PLATFORM and GOV_APP databases created
 # - All required schemas established
-# - Role hierarchy configured
-# - Warehouse and permissions set up
+# - Complete table structure with foreign keys
+# - Basic role grants configured
 ```
 
 **Key Components Created:**
 - **Databases**: `GOV_PLATFORM`, `GOV_APP`
-- **Roles**: `GOVERNANCE_ADMIN`, `DATA_STEWARD`, `GOVERNANCE_ANALYST`, `AUDIT_ROLE`, `RISK_MANAGER`
-- **Warehouse**: `GOVERNANCE_APP_WH`
 - **Schemas**: All governance, catalog, lineage, quality, risk, and application schemas
+- **Tables**: Complete table structure with relationships and constraints
+- **Grants**: Basic permissions for `GOVERNANCE_ADMIN` role
 
 ### Step 2: Application Layer Setup
 
@@ -256,9 +256,9 @@ snowsql -c <your_connection> -o friendly=false -o header=false -q "SELECT CURREN
 
 ## 📝 Deployment Checklist
 
-- [ ] Core infrastructure deployed (`01_deployment_script.sql`)
-- [ ] Application layer configured (`unified_view.sql`)
-- [ ] Streamlit infrastructure created (`app_build.sql`)
+- [ ] Core infrastructure deployed (`database_setup/unified_setup.sql`)
+- [ ] Application layer configured (`app_layer/unified_view.sql`)
+- [ ] Streamlit infrastructure created (`deployment/app_build.sql`)
 - [ ] Application files uploaded to stage
 - [ ] Stage and application refreshed
 - [ ] Sample data loaded

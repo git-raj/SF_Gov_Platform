@@ -31,23 +31,11 @@ This platform provides end-to-end data governance capabilities including:
 
 ### 1. Database Setup
 
-Execute the database setup scripts in order:
+Execute the unified database setup script:
 
 ```sql
--- 1. Create databases and core schemas
-@database_setup/01_governance_database_ddl.sql
-
--- 2. Create ownership tables
-@database_setup/02_ownership_schema.sql
-
--- 3. Create governance tables
-@database_setup/03_governance_schema.sql
-
--- 4. Create lineage tables
-@database_setup/04_lineage_schema.sql
-
--- 5. Create remaining schemas (security, risk, quality, change)
-@database_setup/05_remaining_schemas.sql
+-- Complete database, schema, and table setup in one script
+@database_setup/unified_setup.sql
 ```
 
 ### 2. Application Layer Setup
@@ -211,7 +199,7 @@ MASK_EMAIL, MASK_SENSITIVE_SAMPLES, MASK_EVIDENCE_REF
 
 ## 📋 Implementation Guide
 
-### Phase 1: Foundation (Week 1-2)
+### Phase 1: Foundation
 1. **Deploy core infrastructure:**
    ```bash
    # Deploy database schemas and roles
@@ -239,19 +227,19 @@ MASK_EMAIL, MASK_SENSITIVE_SAMPLES, MASK_EVIDENCE_REF
    SELECT * FROM GOV_APP.VIEWS.VW_TODAY_HEALTH LIMIT 10;
    ```
 
-### Phase 2: Security and Access Control (Week 2-3)
+### Phase 2: Security and Access Control
 1. Configure role-based access policies
 2. Set up row-level security and masking
 3. Validate feature flag configurations
 4. Test authorization workflows
 
-### Phase 3: Data Integration (Week 3-4)
+### Phase 3: Data Integration
 1. Integrate with dbt using provided macros
 2. Configure data quality monitoring
 3. Set up lineage capture
 4. Implement automated data profiling
 
-### Phase 4: Production Readiness (Week 4-5)
+### Phase 4: Production Readiness
 1. Performance tuning and optimization
 2. Monitoring and alerting setup
 3. Backup and recovery procedures
