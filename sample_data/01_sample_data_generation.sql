@@ -4,15 +4,19 @@
 -- Generate sample data for testing and demonstration purposes
 
 -- Sample Domains
-INSERT INTO GOV_PLATFORM.CATALOG.DIM_DOMAIN (DOMAIN_ID, DOMAIN_NAME, DESCRIPTION, CRITICALITY, OWNER_GROUP) VALUES
+INSERT INTO GOV_PLATFORM.CATALOG.DIM_DOMAIN
+(DOMAIN_ID, DOMAIN_NAME, DESCRIPTION, CRITICALITY, OWNER_GROUP)
+VALUES
 ('DOM-001', 'Retail Banking', 'Customer deposits, checking, savings accounts', 'HIGH', 'Retail Operations'),
-('DOM-002', 'Lending', 'Mortgages, personal loans, credit facilities', 'CRITICAL', 'Lending Operations'),
+('DOM-002', 'Lending', 'Mortgages, personal loans, credit facilities', 'HIGH', 'Lending Operations'),
 ('DOM-003', 'Cards & Payments', 'Credit cards, debit cards, payment processing', 'HIGH', 'Cards Operations'),
-('DOM-004', 'Treasury', 'Treasury management, liquidity, investments', 'CRITICAL', 'Treasury Operations'),
-('DOM-005', 'Risk Management', 'Credit risk, market risk, operational risk', 'CRITICAL', 'Risk Management'),
-('DOM-006', 'Compliance', 'Regulatory reporting, AML, KYC', 'CRITICAL', 'Compliance Team'),
+('DOM-004', 'Treasury', 'Treasury management, liquidity, investments', 'HIGH', 'Treasury Operations'),
+('DOM-005', 'Risk Management', 'Credit risk, market risk, operational risk', 'HIGH', 'Risk Management'),
+('DOM-006', 'Compliance', 'Regulatory reporting, AML, KYC', 'HIGH', 'Compliance Team'),
 ('DOM-007', 'Human Resources', 'Employee data, payroll, benefits', 'MEDIUM', 'HR Operations'),
 ('DOM-008', 'Finance', 'Financial reporting, accounting, budgeting', 'HIGH', 'Finance Team');
+
+
 
 -- Sample Systems
 INSERT INTO GOV_PLATFORM.CATALOG.DIM_SYSTEM (SYSTEM_ID, SYSTEM_NAME, SYSTEM_TYPE, OWNER_GROUP, DESCRIPTION) VALUES
@@ -33,12 +37,13 @@ INSERT INTO GOV_PLATFORM.CATALOG.DIM_DATASET (DATASET_ID, SYSTEM_ID, DOMAIN_ID, 
 ('DS-004', 'SYS-007', 'DOM-004', 'Snowflake', 'TREASURY_DW', 'CORE', 'LIQUIDITY_POSITION', 'TABLE', 'business_vault', 'Confidential', TRUE, 'Daily liquidity positions', 'Certified'),
 ('DS-005', 'SYS-007', 'DOM-005', 'Snowflake', 'RISK_DW', 'CORE', 'CREDIT_EXPOSURE', 'TABLE', 'business_vault', 'Confidential', TRUE, 'Credit risk exposures', 'Certified'),
 ('DS-006', 'SYS-006', 'DOM-001', 'S3', 'DATALAKE', 'RAW', 'CUSTOMER_EVENTS', 'EXTERNAL_TABLE', 'bronze', 'PII', FALSE, 'Raw customer event stream', 'Draft'),
-('DS-007', 'SYS-006', 'DOM-002', 'S3', 'DATALAKE', 'RAW', 'LOAN_DOCUMENTS', 'EXTERNAL_TABLE', 'bronze', 'Confidential', FALSE, 'Loan application documents', 'Under_Review'),
+('DS-007', 'SYS-006', 'DOM-002', 'S3', 'DATALAKE', 'RAW', 'LOAN_DOCUMENTS', 'EXTERNAL_TABLE', 'bronze', 'Confidential', FALSE, 'Loan application documents', 'UNDER_REVIEW'),
 ('DS-008', 'SYS-007', 'DOM-006', 'Snowflake', 'COMPLIANCE_DW', 'REPORTING', 'AML_ALERTS', 'TABLE', 'business_vault', 'Confidential', TRUE, 'Anti-money laundering alerts', 'Certified');
 
 -- Sample Parties (Users and Groups)
-INSERT INTO GOV_PLATFORM.OWNERSHIP.DIM_PARTY (PARTY_ID, PARTY_TYPE, PARTY_NAME, EMAIL) VALUES
--- Individual users
+INSERT INTO GOV_PLATFORM.OWNERSHIP.DIM_PARTY
+  (PARTY_ID, PARTY_TYPE, PARTY_NAME, EMAIL)
+VALUES
 ('PTY-001', 'PERSON', 'Alice Johnson', 'alice.johnson@company.com'),
 ('PTY-002', 'PERSON', 'Bob Smith', 'bob.smith@company.com'),
 ('PTY-003', 'PERSON', 'Carol Davis', 'carol.davis@company.com'),
@@ -115,12 +120,24 @@ INSERT INTO GOV_PLATFORM.GOVERNANCE.RETENTION_POLICY (POLICY_ID, POLICY_NAME, DU
 ('RET-004', 'Temporary Data - 90 Day Retention', 90, 'PURGE', FALSE);
 
 -- Sample Data Quality Rules
-INSERT INTO GOV_PLATFORM.QUALITY.DQ_RULE (RULE_ID, RULE_NAME, RULE_TYPE, DATASET_ID, COLUMN_NAME, CONFIG_JSON, SEVERITY, OWNER_PARTY_ID, ENABLED_FLAG) VALUES
-('DQR-001', 'Customer ID Not Null', 'COMPLETENESS', 'DS-001', 'CUSTOMER_ID', '{"threshold": 100.0, "action": "ALERT"}', 'CRITICAL', 'PTY-001', TRUE),
-('DQR-002', 'Account Balance Positive', 'VALIDITY', 'DS-001', 'ACCOUNT_BALANCE', '{"min_value": 0, "action": "ALERT"}', 'HIGH', 'PTY-001', TRUE),
-('DQR-003', 'Credit Score Range Check', 'VALIDITY', 'DS-002', 'CREDIT_SCORE', '{"min_value": 300, "max_value": 850, "action": "ALERT"}', 'HIGH', 'PTY-002', TRUE),
-('DQR-004', 'Transaction Amount Format', 'VALIDITY', 'DS-003', 'TRANSACTION_AMOUNT', '{"precision": 2, "scale": 2, "action": "ALERT"}', 'MEDIUM', 'PTY-003', TRUE),
-('DQR-005', 'Unique Customer Account', 'UNIQUENESS', 'DS-001', 'CUSTOMER_ID,ACCOUNT_NUMBER', '{"threshold": 100.0, "action": "ALERT"}', 'CRITICAL', 'PTY-001', TRUE);
+INSERT INTO GOV_PLATFORM.QUALITY.DQ_RULE
+  (RULE_ID, RULE_NAME, RULE_TYPE, DATASET_ID, COLUMN_NAME, CONFIG_JSON, SEVERITY, OWNER_PARTY_ID, ENABLED_FLAG)
+SELECT 'DQR-001', 'Customer ID Not Null',      'COMPLETENESS', 'DS-001', 'CUSTOMER_ID',
+       OBJECT_CONSTRUCT('threshold', 100.0, 'action', 'ALERT')::VARIANT, 'HIGH',   'PTY-001', TRUE
+UNION ALL
+SELECT 'DQR-002', 'Account Balance Positive',  'VALIDITY',     'DS-001', 'ACCOUNT_BALANCE',
+       OBJECT_CONSTRUCT('min_value', 0, 'action', 'ALERT')::VARIANT,     'HIGH',   'PTY-001', TRUE
+UNION ALL
+SELECT 'DQR-003', 'Credit Score Range Check',  'VALIDITY',     'DS-002', 'CREDIT_SCORE',
+       OBJECT_CONSTRUCT('min_value', 300, 'max_value', 850, 'action', 'ALERT')::VARIANT, 'HIGH', 'PTY-002', TRUE
+UNION ALL
+SELECT 'DQR-004', 'Transaction Amount Format', 'VALIDITY',     'DS-003', 'TRANSACTION_AMOUNT',
+       OBJECT_CONSTRUCT('precision', 2, 'scale', 2, 'action', 'ALERT')::VARIANT,   'MEDIUM', 'PTY-003', TRUE
+UNION ALL
+SELECT 'DQR-005', 'Unique Customer Account',   'UNIQUENESS',   'DS-001', 'CUSTOMER_ID,ACCOUNT_NUMBER',
+       OBJECT_CONSTRUCT('threshold', 100.0, 'action', 'ALERT')::VARIANT, 'HIGH',   'PTY-001', TRUE;
+
+
 
 -- Sample Lineage Nodes
 INSERT INTO GOV_PLATFORM.LINEAGE.LINEAGE_NODE (NODE_ID, NODE_TYPE, REF_ID, NAME, DESCRIPTION) VALUES
@@ -149,42 +166,68 @@ INSERT INTO GOV_PLATFORM.LINEAGE.PROCESS (PROCESS_ID, NAME, ORCHESTRATOR, OWNER_
 ('PROC-005', 'Data Quality Monitoring', 'dbt', 'PTY-100', 'Automated data quality testing and alerting');
 
 -- Sample Process Runs (Recent executions)
-INSERT INTO GOV_PLATFORM.LINEAGE.PROCESS_RUN (RUN_ID, PROCESS_ID, STARTED_AT, ENDED_AT, STATUS, TRIGGER_REF) VALUES
+INSERT INTO GOV_PLATFORM.LINEAGE.PROCESS_RUN
+  (RUN_ID, PROCESS_ID, STARTED_AT, ENDED_AT, STATUS, TRIGGER_REF)
+VALUES
 ('RUN-001', 'PROC-001', DATEADD('hour', -2, CURRENT_TIMESTAMP()), DATEADD('hour', -1, CURRENT_TIMESTAMP()), 'SUCCESS', 'SCHEDULED'),
 ('RUN-002', 'PROC-002', DATEADD('hour', -3, CURRENT_TIMESTAMP()), DATEADD('hour', -2, CURRENT_TIMESTAMP()), 'SUCCESS', 'SCHEDULED'),
 ('RUN-003', 'PROC-003', DATEADD('hour', -1, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP(), 'SUCCESS', 'SCHEDULED'),
-('RUN-004', 'PROC-004', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('day', -1, CURRENT_TIMESTAMP()) + INTERVAL '30 minutes', 'SUCCESS', 'SCHEDULED'),
+('RUN-004', 'PROC-004', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('minute', 30, DATEADD('day', -1, CURRENT_TIMESTAMP())), 'SUCCESS', 'SCHEDULED'),
 ('RUN-005', 'PROC-005', DATEADD('hour', -4, CURRENT_TIMESTAMP()), DATEADD('hour', -3, CURRENT_TIMESTAMP()), 'FAILED', 'SCHEDULED'),
-('RUN-006', 'PROC-001', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('day', -1, CURRENT_TIMESTAMP()) + INTERVAL '45 minutes', 'SUCCESS', 'SCHEDULED'),
-('RUN-007', 'PROC-002', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('day', -1, CURRENT_TIMESTAMP()) + INTERVAL '25 minutes', 'SUCCESS', 'SCHEDULED');
+('RUN-006', 'PROC-001', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('minute', 45, DATEADD('day', -1, CURRENT_TIMESTAMP())), 'SUCCESS', 'SCHEDULED'),
+('RUN-007', 'PROC-002', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('minute', 25, DATEADD('day', -1, CURRENT_TIMESTAMP())), 'SUCCESS', 'SCHEDULED');
+
 
 -- Sample Risk Items
-INSERT INTO GOV_PLATFORM.RISK.RISK_ITEM (RISK_ID, TITLE, DESCRIPTION, CATEGORY, SEVERITY, LIKELIHOOD, IMPACT, OWNER_PARTY_ID, STATUS) VALUES
-('RSK-001', 'Data Quality Deterioration', 'Risk of declining data quality in critical datasets', 'DataQuality', 'HIGH', 'MEDIUM', 'HIGH', 'PTY-100', 'OPEN'),
-('RSK-002', 'Regulatory Reporting Delays', 'Risk of missing regulatory reporting deadlines', 'Compliance', 'CRITICAL', 'LOW', 'HIGH', 'PTY-104', 'OPEN'),
-('RSK-003', 'System Downtime Impact', 'Risk of core system outages affecting data processing', 'Operational', 'HIGH', 'MEDIUM', 'CRITICAL', 'PTY-101', 'MITIGATED'),
-('RSK-004', 'Data Privacy Breach', 'Risk of unauthorized access to PII data', 'Security', 'CRITICAL', 'LOW', 'CRITICAL', 'PTY-100', 'OPEN');
+INSERT INTO GOV_PLATFORM.RISK.RISK_ITEM
+  (RISK_ID, TITLE, DESCRIPTION, CATEGORY, SEVERITY, LIKELIHOOD, IMPACT, OWNER_PARTY_ID, STATUS)
+VALUES
+('RSK-001', 'Data Quality Deterioration', 'Risk of declining data quality in critical datasets', 'DataQuality', 'HIGH',     'MEDIUM', 'HIGH', 'PTY-100', 'OPEN'),
+('RSK-002', 'Regulatory Reporting Delays', 'Risk of missing regulatory reporting deadlines',      'Compliance',  'CRITICAL', 'LOW',    'HIGH', 'PTY-104', 'OPEN'),
+('RSK-003', 'System Downtime Impact',      'Risk of core system outages affecting data processing','Operational','HIGH',     'MEDIUM', 'HIGH', 'PTY-101', 'MITIGATED'),
+('RSK-004', 'Data Privacy Breach',         'Risk of unauthorized access to PII data',             'Security',    'CRITICAL', 'LOW',    'HIGH', 'PTY-100', 'OPEN');
+
 
 -- Sample DQ Run and Results
 INSERT INTO GOV_PLATFORM.QUALITY.DQ_RUN (RUN_ID, STARTED_AT, ENDED_AT, ORCHESTRATOR, STATUS) VALUES
 ('DQR-RUN-001', DATEADD('hour', -2, CURRENT_TIMESTAMP()), DATEADD('hour', -1, CURRENT_TIMESTAMP()), 'dbt', 'SUCCESS'),
-('DQR-RUN-002', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('day', -1, CURRENT_TIMESTAMP()) + INTERVAL '30 minutes', 'dbt', 'SUCCESS'),
+('DQR-RUN-002', DATEADD('day', -1, CURRENT_TIMESTAMP()), DATEADD('minute', 30, DATEADD('day', -1, CURRENT_TIMESTAMP())), 'dbt', 'SUCCESS'),
 ('DQR-RUN-003', DATEADD('hour', -4, CURRENT_TIMESTAMP()), DATEADD('hour', -3, CURRENT_TIMESTAMP()), 'dbt', 'FAILED');
 
-INSERT INTO GOV_PLATFORM.QUALITY.DQ_RESULT (RUN_ID, RULE_ID, DATASET_ID, OUTCOME, METRICS_SUMMARY, EVIDENCE_REF) VALUES
-('DQR-RUN-001', 'DQR-001', 'DS-001', 'PASS', '{"completeness_rate": 99.8, "null_count": 245}', 'evidence/dqr-001/run-001.json'),
-('DQR-RUN-001', 'DQR-002', 'DS-001', 'PASS', '{"validity_rate": 98.5, "negative_balance_count": 12}', 'evidence/dqr-002/run-001.json'),
-('DQR-RUN-001', 'DQR-003', 'DS-002', 'FAIL', '{"validity_rate": 92.3, "out_of_range_count": 156}', 'evidence/dqr-003/run-001.json'),
-('DQR-RUN-002', 'DQR-001', 'DS-001', 'PASS', '{"completeness_rate": 99.9, "null_count": 123}', 'evidence/dqr-001/run-002.json'),
-('DQR-RUN-002', 'DQR-005', 'DS-001', 'WARN', '{"uniqueness_rate": 99.1, "duplicate_count": 45}', 'evidence/dqr-005/run-002.json');
+
+INSERT INTO GOV_PLATFORM.QUALITY.DQ_RESULT
+  (RUN_ID, RULE_ID, DATASET_ID, OUTCOME, METRICS_SUMMARY, EVIDENCE_REF)
+SELECT 'DQR-RUN-001', 'DQR-001', 'DS-001', 'PASS',
+       OBJECT_CONSTRUCT('completeness_rate', 99.8, 'null_count', 245)::VARIANT,
+       'evidence/dqr-001/run-001.json'
+UNION ALL
+SELECT 'DQR-RUN-001', 'DQR-002', 'DS-001', 'PASS',
+       OBJECT_CONSTRUCT('validity_rate', 98.5, 'negative_balance_count', 12)::VARIANT,
+       'evidence/dqr-002/run-001.json'
+UNION ALL
+SELECT 'DQR-RUN-001', 'DQR-003', 'DS-002', 'FAIL',
+       OBJECT_CONSTRUCT('validity_rate', 92.3, 'out_of_range_count', 156)::VARIANT,
+       'evidence/dqr-003/run-001.json'
+UNION ALL
+SELECT 'DQR-RUN-002', 'DQR-001', 'DS-001', 'PASS',
+       OBJECT_CONSTRUCT('completeness_rate', 99.9, 'null_count', 123)::VARIANT,
+       'evidence/dqr-001/run-002.json'
+UNION ALL
+SELECT 'DQR-RUN-002', 'DQR-005', 'DS-001', 'WARN',
+       OBJECT_CONSTRUCT('uniqueness_rate', 99.1, 'duplicate_count', 45)::VARIANT,
+       'evidence/dqr-005/run-002.json';
+
 
 -- Sample Control Test Results
-INSERT INTO GOV_PLATFORM.RISK.CONTROL_TEST (TEST_ID, CONTROL_ID, RUN_ID, EXECUTED_AT, OUTCOME, DETAILS) VALUES
+INSERT INTO GOV_PLATFORM.RISK.CONTROL_TEST
+  (TEST_ID, CONTROL_ID, RUN_ID, EXECUTED_AT, OUTCOME, DETAILS)
+VALUES
 ('CT-001', 'CTL-001', 'RUN-001', DATEADD('hour', -1, CURRENT_TIMESTAMP()), 'PASS', 'Account balance completeness: 99.8%'),
 ('CT-002', 'CTL-002', 'RUN-002', DATEADD('hour', -2, CURRENT_TIMESTAMP()), 'FAIL', 'Credit score validity: 92.3% - Below threshold'),
 ('CT-003', 'CTL-003', 'RUN-003', DATEADD('hour', -1, CURRENT_TIMESTAMP()), 'PASS', 'Transaction amount accuracy: 99.9%'),
 ('CT-004', 'CTL-004', 'RUN-001', DATEADD('hour', -1, CURRENT_TIMESTAMP()), 'PASS', 'PII classification: 100% compliant'),
 ('CT-005', 'CTL-005', 'RUN-003', DATEADD('hour', -1, CURRENT_TIMESTAMP()), 'WARN', 'Risk exposure reconciliation: 97.2%');
+
 
 -- Sample Dataset Attribute Mappings
 INSERT INTO GOV_PLATFORM.CATALOG.MAP_DATASET_ATTRIBUTE (MAP_ID, DATASET_ID, COLUMN_NAME, TERM_ID, CDE_ID, SEMANTIC_TYPE, QUALITY_CRITICAL) VALUES
