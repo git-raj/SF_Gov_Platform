@@ -1,4 +1,4 @@
-# Snowflake Governance Platform
+# Snowflake Native Governance Platform
 
 A comprehensive enterprise-grade data governance platform built natively on Snowflake with Streamlit for visualization and management.
 
